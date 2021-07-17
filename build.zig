@@ -117,7 +117,7 @@ const LimineImage = struct
 
         if (cwd.deleteFile(image_path))
         {
-            panic("File deleted here\n", .{});
+            print("Already existent ISO deleted\n", .{});
         }
         else |err|
         {
@@ -219,7 +219,7 @@ const LimineImage = struct
     const Self = @This();
 };
 
-fn run_qemu_x86_64_bios(b: *Builder, image_path: []const u8) *std.build.RunStep
+fn debug_qemu_x86_64_bios(b: *Builder, image_path: []const u8) *std.build.RunStep
 {
     const cmd = &[_][]const u8
     {
@@ -234,10 +234,47 @@ fn run_qemu_x86_64_bios(b: *Builder, image_path: []const u8) *std.build.RunStep
 
     const run_step = b.addSystemCommand(cmd);
 
+    const run_command = b.step("qemu", "Run on x86_64 with Limine BIOS bootloader");
+    run_command.dependOn(&run_step.step);
+
+    return run_step;
+}
+
+fn run_qemu_x86_64_bios(b: *Builder, image_path: []const u8) *std.build.RunStep
+{
+    const cmd = &[_][]const u8
+    {
+        "qemu-system-x86_64",
+        "-cdrom", image_path,
+        "-debugcon", "stdio",
+        "-vga", "virtio",
+        "-m", "4G",
+        "-machine", "q35,accel=kvm:whpx:tcg",
+    };
+
+    const run_step = b.addSystemCommand(cmd);
+
     const run_command = b.step("run", "Run on x86_64 with Limine BIOS bootloader");
     run_command.dependOn(&run_step.step);
 
     return run_step;
+}
+fn debug_with_gdb(b: *Builder, kernel_path: []const u8) *std.build.RunStep
+{
+    const cmd = &[_][]const u8
+    {
+        "x86_64-elf-gdb",
+        kernel_path,
+        "-ex",
+        "target remote localhost:1234",
+    };
+
+    const debug_step = b.addSystemCommand(cmd);
+
+    const debug_command = b.step("gdb", "Debug x86_64 kernel with GDB");
+    debug_command.dependOn(&debug_step.step);
+
+    return debug_step;
 }
 
 pub fn build(b: *std.build.Builder) void
@@ -249,4 +286,10 @@ pub fn build(b: *std.build.Builder) void
 
     const qemu_run = run_qemu_x86_64_bios(b, image_path);
     qemu_run.step.dependOn(&limine_image.step);
+
+    const qemu_debug = debug_qemu_x86_64_bios(b, image_path);
+    qemu_debug.step.dependOn(&limine_image.step);
+
+    const debug_gdb = debug_with_gdb(b, kernel.getOutputPath());
+    debug_gdb.step.dependOn(&limine_image.step);
 }

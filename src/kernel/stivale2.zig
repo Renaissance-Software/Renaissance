@@ -10,15 +10,15 @@ pub const Anchor = packed struct
 
 pub const Tag = packed struct
 {
-    identifier: u64,
-    next: u64,
+    id: u64,
+    next: ?*@This(),
 };
 pub const Header = packed struct
 {
     entry_point: u64,
     stack: u64,
     flags: u64,
-    tags: u64,
+    tags: *Tag
 };
 
 pub const HeaderTag = struct
@@ -55,28 +55,18 @@ pub const Struct = packed struct
 {
     bootloader_brand: [64]u8,
     bootloader_version: [64]u8,
-    tags: u64,
+    tags: ?*Tag,
 
-    pub fn get_tag(self: *@This(), id: u64) u64
+    pub fn get_tag(self: *@This(), id: u64) ?*Tag
     {
         var current_tag = self.tags;
 
-        while (true)
+        while (current_tag) |tag| : (current_tag = tag.next)
         {
-            if (current_tag == 0)
-            {
-                return 0;
-            }
-
-            const tag = @intToPtr(*Tag, current_tag);
-
-            if (tag.identifier == id)
-            {
-                return current_tag;
-            }
-
-            current_tag = tag.next;
+            if (tag.id == id) return tag;
         }
+
+        return null;
     }
 };
 
@@ -122,6 +112,8 @@ pub const StructTag = struct
         rows: u16,
         term_write: u64,
         max_length: u64,
+
+        pub const id = 0xc2b3f4c3233b0974;
     };
     pub const Modules = opaque {};
     pub const RSDP = packed struct
