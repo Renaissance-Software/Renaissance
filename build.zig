@@ -229,6 +229,7 @@ fn run_qemu_x86_64_bios(b: *Builder, image_path: []const u8) *std.build.RunStep
         "-vga", "virtio",
         "-m", "4G",
         "-machine", "q35,accel=kvm:whpx:tcg",
+        "-S", "-s",
     };
 
     const run_step = b.addSystemCommand(cmd);

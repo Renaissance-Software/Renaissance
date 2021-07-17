@@ -1,8 +1,18 @@
 ENTRY(kernel_main)
 
+PHDRS
+{
+  none   PT_NULL FLAGS(0);
+  text   PT_LOAD FLAGS((1 << 2) | (1 << 0) /* Readable | Executable */);
+  rodata PT_LOAD FLAGS((1 << 2)            /* Readable */);
+  data   PT_LOAD FLAGS((1 << 2) | (1 << 1) /* Readable | Writeable  */);
+}
+
 SECTIONS
 {
-    .stivale2hdr 0:
+    . = 0xFFFFFFFF80200000;
+
+    .stivale2hdr :
     {
         QUAD(kernel_main)
         QUAD(stack_high)
@@ -10,7 +20,7 @@ SECTIONS
         QUAD(stivale2_tags)
     }
 
-    . = 0xFFFFFFFF80100000;
+    . = ALIGN(64K);
  
     .text . :
     {
