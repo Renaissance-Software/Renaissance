@@ -1,26 +1,17 @@
-/* Tell the linker that we want the symbol _start to be our entry point */
 ENTRY(kernel_main)
 
-/*PHDRS*/
-/*{*/
-  /*none   PT_NULL FLAGS(0);*/
-  /*text   PT_LOAD FLAGS((1 << 2) | (1 << 0) [> Readable | Executable <]);*/
-  /*rodata PT_LOAD FLAGS((1 << 2)            [> Readable <]);*/
-  /*data   PT_LOAD FLAGS((1 << 2) | (1 << 1) [> Readable | Writeable  <]);*/
-/*} */
 SECTIONS
 {
     .stivale2hdr 0:
     {
         QUAD(kernel_main)
         QUAD(stack_high)
-        QUAD(1 << 1) // flags // higher half
+        QUAD(0)
         QUAD(stivale2_tags)
     }
 
-    . = 0xffffffff80200000;
+    . = 0xFFFFFFFF80100000;
  
-    /* Then let's place all the other traditional executable sections afterwards. */
     .text . :
     {
         *(.text*)
@@ -35,16 +26,20 @@ SECTIONS
         stivale2_framebuffer_tag = .;
         QUAD(0x3ecc1bc43d0f7971) // identifier
         QUAD(stivale2_framebuffer_tag_after) // next
-        QUAD(0) // flags
-        QUAD(0) // width
-        QUAD(0) // height
-        QUAD(0) // bpp
+        SHORT(0) // width
+        SHORT(0) // height
+        SHORT(0) // bpp
         stivale2_framebuffer_tag_after = .;
 
         stivale2_terminal_tag = .;
         QUAD(0xa85d499b1823be72) // identifier
-        QUAD(0) // next
+        QUAD(stivale2_terminal_tag_after) // next
         QUAD(0) // flags
+
+        stivale2_terminal_tag_after = .;
+
+        QUAD(0xAAAAAAAAAAAAAAAA)
+        QUAD(0)
 
         *(.rodata*)
     }:rodata

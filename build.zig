@@ -11,7 +11,6 @@ pub fn stivale2_kernel(b: *Builder, arch: std.Target.Cpu.Arch) *std.build.LibExe
 {
     const kernel_filename = b.fmt("kernel_{s}.elf", .{@tagName(arch)});
     const kernel = b.addExecutable(kernel_filename, "src/kernel/main.zig");
-    kernel.setMainPkgPath(".");
     kernel.setOutputDir(b.cache_root);
     const mode = b.standardReleaseOptions();
     kernel.setBuildMode(mode);
@@ -190,6 +189,7 @@ const LimineImage = struct
         try copy_file(image_dir_handle, limine_cfg_dir, "limine.cfg");
 
         const efi_boot_dir = try image_dir_handle.openDir("EFI/BOOT", .{});
+        try copy_file(efi_boot_dir, limine_cfg_dir, "limine.cfg");
         try copy_file(efi_boot_dir, limine_dir, "BOOTX64.EFI");
 
         print("Making ISO image of the kernel with XORRISO...\n", .{});
