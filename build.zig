@@ -219,20 +219,13 @@ const LimineImage = struct
     const Self = @This();
 };
 
-fn debug_qemu_x86_64_bios(b: *Builder, image_path: []const u8) *std.build.RunStep
-{
-    const cmd = &[_][]const u8
-    {
-        "qemu-system-x86_64",
-        "-cdrom", image_path,
-        "-debugcon", "stdio",
-        "-vga", "virtio",
-        "-m", "4G",
-        "-machine", "q35,accel=kvm:whpx:tcg",
-        "-S", "-s",
-    };
 
-    const run_step = b.addSystemCommand(cmd);
+fn debug_qemu_x86_64_bios(b: *Builder, comptime qemu_command: []const []const u8) *std.build.RunStep
+{
+    const debug_remotely_with_gdb: []const u8 = "-S";
+    const freeze_cpu_at_startup: []const u8 = "-s";
+
+    const run_step = b.addSystemCommand(qemu_command ++ &[_][]const u8 {"-S", "-s"});
 
     const run_command = b.step("qemu", "Run on x86_64 with Limine BIOS bootloader");
     run_command.dependOn(&run_step.step);
@@ -240,25 +233,17 @@ fn debug_qemu_x86_64_bios(b: *Builder, image_path: []const u8) *std.build.RunSte
     return run_step;
 }
 
-fn run_qemu_x86_64_bios(b: *Builder, image_path: []const u8) *std.build.RunStep
-{
-    const cmd = &[_][]const u8
-    {
-        "qemu-system-x86_64",
-        "-cdrom", image_path,
-        "-debugcon", "stdio",
-        "-vga", "virtio",
-        "-m", "4G",
-        "-machine", "q35,accel=kvm:whpx:tcg",
-    };
 
-    const run_step = b.addSystemCommand(cmd);
+fn run_qemu_x86_64_bios(b: *Builder, comptime qemu_command: []const []const u8) *std.build.RunStep
+{
+    const run_step = b.addSystemCommand(qemu_command);
 
     const run_command = b.step("run", "Run on x86_64 with Limine BIOS bootloader");
     run_command.dependOn(&run_step.step);
 
     return run_step;
 }
+
 fn debug_with_gdb(b: *Builder, kernel_path: []const u8) *std.build.RunStep
 {
     const cmd = &[_][]const u8
@@ -280,14 +265,25 @@ fn debug_with_gdb(b: *Builder, kernel_path: []const u8) *std.build.RunStep
 pub fn build(b: *std.build.Builder) void
 {
     const kernel = stivale2_kernel(b, .x86_64);
-    const image_path = b.fmt("{s}/kernel.iso", .{b.cache_root});
+    const cache_root = "zig-cache";
+    const image_path = cache_root ++ "/kernel.iso";
     var limine_image = LimineImage.create(b, kernel, image_path);
     b.default_step.dependOn(&limine_image.step);
 
-    const qemu_run = run_qemu_x86_64_bios(b, image_path);
+    const base_qemu_command = &[_][]const u8
+    {
+        "qemu-system-x86_64",
+        "-cdrom", image_path,
+        "-serial", "stdio",
+        "-display", "none",
+        "-m", "4G",
+        "-machine", "q35",
+    };
+
+    const qemu_run = run_qemu_x86_64_bios(b, base_qemu_command[0..]);
     qemu_run.step.dependOn(&limine_image.step);
 
-    const qemu_debug = debug_qemu_x86_64_bios(b, image_path);
+    const qemu_debug = debug_qemu_x86_64_bios(b, base_qemu_command[0..]);
     qemu_debug.step.dependOn(&limine_image.step);
 
     const debug_gdb = debug_with_gdb(b, kernel.getOutputPath());
