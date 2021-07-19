@@ -41,6 +41,12 @@ SECTIONS
         SHORT(0) // bpp
         stivale2_framebuffer_tag_after = .;
 
+        stivale2_smp_tag = .;
+        QUAD(0x1ab015085f3273df) /* identifier */
+        QUAD(stivale2_smp_tag_after) /* next */
+        QUAD(0) /* flags */
+        stivale2_smp_tag_after = .;
+
         stivale2_terminal_tag = .;
         QUAD(0xa85d499b1823be72) // identifier
         QUAD(stivale2_terminal_tag_after) // next

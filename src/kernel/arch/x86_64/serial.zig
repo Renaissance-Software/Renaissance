@@ -3,9 +3,6 @@ const x86_64 = @import("../x86_64.zig");
 
 const IOPort = @import("port.zig");
 
-const COM1_base = 0x3F8;
-
-const line_enable_DLAB = 0x80;
 
 pub const Port = struct
 {
@@ -13,10 +10,14 @@ pub const Port = struct
 
     const Self = @This();
 
-    pub const @"1" = Port.new(0x3F8);
-    pub const @"2" = Port.new(0x2F8);
-    pub const @"3" = Port.new(0x3E8);
-    pub const @"4" = Port.new(0x2E8);
+    pub const COM = [5]Self
+    {
+        undefined,
+        Port.new(0x3F8),
+        Port.new(0x2F8),
+        Port.new(0x3E8),
+        Port.new(0x2E8),
+    };
 
     const data = 1;
     const output = 1 << 5;
@@ -170,109 +171,12 @@ pub const Port = struct
 
         return bytes.len;
     }
+
+    const BaudRate = enum(u8)
+    {
+        @"115200" = 1, // = 115200,
+        @"57600" = 2, // = 57600,
+        @"38400" = 3, // = 38400,
+        @"28800" = 4, // = 28800,
+    };
 };
-
-const COM = enum(u16)
-{
-
-    const Self = @This();
-
-};
-
-const BaudRate = enum(u8)
-{
-    @"115200" = 1, // = 115200,
-    @"57600" = 2, // = 57600,
-    @"38400" = 3, // = 38400,
-    @"28800" = 4, // = 28800,
-};
-
-
-//const Portu8 = x86_64.structures.port.Portu8;
-
-//const DATA_READY: u8 = 1;
-//const OUTPUT_READY: u8 = 1 << 5;
-
-///// Represents a UART SerialPort with support for formatted output, no input implemented
-//pub const SerialPort = struct
-//{
-    //z_ata_port: Portu8,
-    //z_line_status_port: Portu8,
-
-    ///// Initalize the serial port at `com_port` with the baud rate `baud_rate` 
-
-    //inline fn waitForOutputReady(self: SerialPort) void
-    //{
-        //while (self.z_line_status_port.read() & OUTPUT_READY == 0)
-        //{
-            //x86_64.instructions.pause();
-        //}
-    //}
-
-    //inline fn waitForInputReady(self: SerialPort) void
-    //{
-        //while (self.z_line_status_port.read() & DATA_READY == 0)
-        //{
-            //x86_64.instructions.pause();
-        //}
-    //}
-
-    //fn sendByte(self: SerialPort, data: u8) void
-    //{
-        //switch (data)
-        //{
-            //8, 0x7F =>
-            //{
-                //self.waitForOutputReady();
-                //self.z_data_port.write(8);
-                //self.waitForOutputReady();
-                //self.z_data_port.write(' ');
-                //self.waitForOutputReady();
-                //self.z_data_port.write(8);
-            //},
-            //else =>
-            //{
-                //self.waitForOutputReady();
-                //self.z_data_port.write(data);
-            //},
-        //}
-    //}
-
-    //pub fn readByte(self: SerialPort) u8
-    //{
-        //return self.z_data_port.read();
-    //}
-
-    //pub fn readByteWait(self: SerialPort) u8
-    //{
-        //self.waitForInputReady();
-        //return self.readByte();
-    //}
-
-    //pub const Writer = std.io.Writer(SerialPort, error{}, writerImpl);
-    //pub fn writer(self: SerialPort) Writer
-    //{
-        //return .{ .context = self };
-    //}
-
-    ///// The impl function driving the `std.io.Writer`
-    //fn writerImpl(self: SerialPort, bytes: []const u8) error{}!usize
-    //{
-        //for (bytes) |char|
-        //{
-            //self.sendByte(char);
-        //}
-        //return bytes.len;
-    //}
-
-    //comptime
-    //{
-        //std.testing.refAllDecls(@This());
-    //}
-//};
-
-//comptime
-//{
-    //std.testing.refAllDecls(@This());
-//}
-//d

@@ -45,7 +45,7 @@ pub fn stivale2_kernel(b: *Builder, arch: std.Target.Cpu.Arch) *std.build.LibExe
             .cpu_features_add = enabled_features,
         });
 
-    kernel.setLinkerScriptPath("src/kernel/linker_script.ld");
+    kernel.setLinkerScriptPath("src/kernel/link.ld");
     b.default_step.dependOn(&kernel.step);
 
     return kernel;
@@ -277,7 +277,9 @@ pub fn build(b: *std.build.Builder) void
         "-serial", "stdio",
         "-display", "none",
         "-m", "4G",
+        "-cpu", "max",
         "-machine", "q35",
+        "-smp", "4"
     };
 
     const qemu_run = run_qemu_x86_64_bios(b, base_qemu_command[0..]);

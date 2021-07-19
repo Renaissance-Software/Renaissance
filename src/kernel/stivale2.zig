@@ -77,7 +77,9 @@ pub const StructTag = struct
         tag: Tag,
         cmdline: u64,
     };
+
     pub const MemoryMap = opaque {};
+
     pub const Framebuffer = packed struct
     {
         tag: Tag,
@@ -153,7 +155,23 @@ pub const StructTag = struct
         smbios_entry_32: u64,
         smbios_entry_64: u64,
     };
-    pub const SMP = opaque {};
+    pub const SMP = packed struct
+    {
+        tag: Tag,
+        flags: u64,
+        BSP_LAPIC_ID: u32,
+        unused: u32,
+        _cpu_count: u64,
+        _smp_info: SMPInfo,
+
+        pub const id = 0x34d1d96339647025;
+
+        pub fn get_smp_info(self: *const @This()) []const SMPInfo
+        {
+            return @ptrCast([*]const SMPInfo, &self._smp_info)[0..self._cpu_count];
+        }
+    };
+
     pub const PXEServerInfo = packed struct
     {
         tag: Tag,
@@ -199,3 +217,20 @@ pub const SMPInfo = packed struct
     goto_address: u64,
     extra_argument: u64,
 }; // stivale2.h:248:30: warning: struct demoted to opaque type - has variable length array
+
+const Terminal = struct
+{
+    var write: fn([*]const u8, usize) void = undefined;
+
+    fn init(stivale2: *Stivale2.Struct) void
+    {
+        const terminal_structure_tag_ptr = stivale2.get_tag(Stivale2.StructTag.Terminal.id);
+        if (terminal_structure_tag_ptr == null)
+        {
+            stall();
+        }
+
+        const terminal_structure_tag = @ptrCast(*Stivale2.StructTag.Terminal, terminal_structure_tag_ptr.?);
+        write = @intToPtr(@TypeOf(write), terminal_structure_tag.term_write);
+    }
+};
